@@ -72,12 +72,16 @@ func (s *Scheduler) TearDownCheckers() error {
 }
 
 func (s *Scheduler) run(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, s.Periodicity)
+	defer cancel()
 	for k, v := range s.Registry {
 		if !v.isSetUp {
 			log.Printf("skip %v check, checker is not setupuped", k)
 		}
-		checkResults, err := v.check.Check(ctx)
-		log.Println(checkResults, err)
+		go func(v *CheckTask) {
+			checkResults, err := v.check.Check(ctx)
+			log.Println(checkResults, err)
+		}(v)
 	}
 	return nil
 }
